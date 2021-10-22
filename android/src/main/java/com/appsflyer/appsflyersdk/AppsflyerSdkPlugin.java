@@ -32,9 +32,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import io.flutter.embedding.engine.plugins.FlutterPlugin;
-import io.flutter.embedding.engine.plugins.activity.ActivityAware;
-import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
+//import io.flutter.embedding.engine.plugins.FlutterPlugin;
+//import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+//import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
@@ -55,8 +55,9 @@ import static com.appsflyer.appsflyersdk.AppsFlyerConstants.AF_VALIDATE_PURCHASE
 /**
  * AppsflyerSdkPlugin
  */
-public class AppsflyerSdkPlugin implements MethodCallHandler, FlutterPlugin, ActivityAware {
+public class AppsflyerSdkPlugin implements MethodCallHandler {
     private EventChannel mEventChannel;
+    private FlutterView mFlutterView;
     /**
      * Plugin registration.
      */
@@ -74,50 +75,26 @@ public class AppsflyerSdkPlugin implements MethodCallHandler, FlutterPlugin, Act
     private Boolean validatePurchaseCallback = false;
     private Boolean isFacebookDeferredApplinksEnabled = false;
 
-    private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
-        this.mContext = applicationContext;
-        this.mEventChannel = new EventChannel(messenger, AF_EVENTS_CHANNEL);
+    private static AppsflyerSdkPlugin instance = null;
+
+    AppsflyerSdkPlugin(Registrar registrar) {
+        this.mFlutterView = registrar.view();
+        this.mContext = registrar.activity().getApplicationContext();
+        this.mApplication = registrar.activity().getApplication();
+        this.mIntent = registrar.activity().getIntent();
+        this.mEventChannel = new EventChannel(registrar.messenger(), AF_EVENTS_CHANNEL);
         mEventChannel.setStreamHandler(new AppsFlyerStreamHandler(mContext));
-        mMethodChannel = new MethodChannel(messenger, AppsFlyerConstants.AF_METHOD_CHANNEL);
-        mMethodChannel.setMethodCallHandler(this);
-        mCallbackChannel = new MethodChannel(messenger, AppsFlyerConstants.AF_CALLBACK_CHANNEL);
-        mCallbackChannel.setMethodCallHandler(callbacksHandler);
     }
 
-    MethodCallHandler callbacksHandler = new MethodCallHandler() {
-        @Override
-        public void onMethodCall(MethodCall call, Result result) {
-            final String method = call.method;
-            if ("startListening".equals(method)) {
-                startListening(call.arguments, result);
-            } else {
-                result.notImplemented();
-            }
-        }
-    };
+    public static void registerWith(Registrar registrar) {
 
-    private Map<String, Map<String, Object>> mCallbacks = new HashMap<>();
+        if (instance == null) {
+            instance = new AppsflyerSdkPlugin(registrar);
+        }
 
-    private void startListening(Object arguments, Result rawResult) {
-        // Get callback id
-        String callbackName = (String) arguments;
-        if(callbackName.equals(AppsFlyerConstants.AF_GCD_CALLBACK)){
-            gcdCallback = true;
-        }
-        if (callbackName.equals(AppsFlyerConstants.AF_OAOA_CALLBACK)){
-            oaoaCallback = true;
-        }
-        if (callbackName.equals(AppsFlyerConstants.AF_UDL_CALLBACK)){
-            udlCallback = true;
-        }
-        if (callbackName.equals(AppsFlyerConstants.AF_VALIDATE_PURCHASE)){
-            validatePurchaseCallback = true;
-        }
-        Map<String, Object> args = new HashMap<>();
-        args.put("id", callbackName);
-        mCallbacks.put(callbackName, args);
+        final MethodChannel channel = new MethodChannel(registrar.messenger(), AppsFlyerConstants.AF_METHOD_CHANNEL);
 
-        rawResult.success(null);
+        channel.setMethodCallHandler(instance);
     }
 
     @Override
@@ -225,6 +202,52 @@ public class AppsflyerSdkPlugin implements MethodCallHandler, FlutterPlugin, Act
                 break;
         }
     }
+
+//    private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
+//        this.mContext = applicationContext;
+//        this.mEventChannel = new EventChannel(messenger, AF_EVENTS_CHANNEL);
+//        mEventChannel.setStreamHandler(new AppsFlyerStreamHandler(mContext));
+//        mMethodChannel = new MethodChannel(messenger, AppsFlyerConstants.AF_METHOD_CHANNEL);
+//        mMethodChannel.setMethodCallHandler(this);
+//        mCallbackChannel = new MethodChannel(messenger, AppsFlyerConstants.AF_CALLBACK_CHANNEL);
+//        mCallbackChannel.setMethodCallHandler(callbacksHandler);
+//    }
+
+//    MethodCallHandler callbacksHandler = new MethodCallHandler() {
+//        @Override
+//        public void onMethodCall(MethodCall call, Result result) {
+//            final String method = call.method;
+//            if ("startListening".equals(method)) {
+//                startListening(call.arguments, result);
+//            } else {
+//                result.notImplemented();
+//            }
+//        }
+//    };
+
+    private Map<String, Map<String, Object>> mCallbacks = new HashMap<>();
+
+//    private void startListening(Object arguments, Result rawResult) {
+//        // Get callback id
+//        String callbackName = (String) arguments;
+//        if(callbackName.equals(AppsFlyerConstants.AF_GCD_CALLBACK)){
+//            gcdCallback = true;
+//        }
+//        if (callbackName.equals(AppsFlyerConstants.AF_OAOA_CALLBACK)){
+//            oaoaCallback = true;
+//        }
+//        if (callbackName.equals(AppsFlyerConstants.AF_UDL_CALLBACK)){
+//            udlCallback = true;
+//        }
+//        if (callbackName.equals(AppsFlyerConstants.AF_VALIDATE_PURCHASE)){
+//            validatePurchaseCallback = true;
+//        }
+//        Map<String, Object> args = new HashMap<>();
+//        args.put("id", callbackName);
+//        mCallbacks.put(callbackName, args);
+//
+//        rawResult.success(null);
+//    }
 
     private void enableFacebookDeferredApplinks(MethodCall call, Result result) {
         isFacebookDeferredApplinksEnabled = (boolean)call.argument("isFacebookDeferredApplinksEnabled");;
@@ -728,38 +751,38 @@ public class AppsflyerSdkPlugin implements MethodCallHandler, FlutterPlugin, Act
         mContext.sendBroadcast(intent);
     }
 
-    @Override
-    public void onAttachedToEngine(FlutterPluginBinding binding) {
-        onAttachedToEngine(binding.getApplicationContext(), binding.getBinaryMessenger());
-    }
+//    @Override
+//    public void onAttachedToEngine(FlutterPluginBinding binding) {
+//        onAttachedToEngine(binding.getApplicationContext(), binding.getBinaryMessenger());
+//    }
+//
+//    @Override
+//    public void onDetachedFromEngine(FlutterPluginBinding binding) {
+//        mMethodChannel.setMethodCallHandler(null);
+//        mMethodChannel = null;
+//        mEventChannel.setStreamHandler(null);
+//        mEventChannel = null;
+//    }
+//
+//    @Override
+//    public void onAttachedToActivity(ActivityPluginBinding binding) {
+//        activity = binding.getActivity();
+//        mIntent = binding.getActivity().getIntent();
+//        mApplication = binding.getActivity().getApplication();
+//    }
+//
+//    @Override
+//    public void onDetachedFromActivityForConfigChanges() {
+//
+//    }
 
-    @Override
-    public void onDetachedFromEngine(FlutterPluginBinding binding) {
-        mMethodChannel.setMethodCallHandler(null);
-        mMethodChannel = null;
-        mEventChannel.setStreamHandler(null);
-        mEventChannel = null;
-    }
-
-    @Override
-    public void onAttachedToActivity(ActivityPluginBinding binding) {
-        activity = binding.getActivity();
-        mIntent = binding.getActivity().getIntent();
-        mApplication = binding.getActivity().getApplication();
-    }
-
-    @Override
-    public void onDetachedFromActivityForConfigChanges() {
-
-    }
-
-    @Override
-    public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
-
-    }
-
-    @Override
-    public void onDetachedFromActivity() {
-        activity = null;
-    }
+//    @Override
+//    public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
+//
+//    }
+//
+//    @Override
+//    public void onDetachedFromActivity() {
+//        activity = null;
+//    }
 }
