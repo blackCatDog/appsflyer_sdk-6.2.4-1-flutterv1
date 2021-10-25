@@ -7,7 +7,7 @@ class AppsflyerSdk {
   StreamController _afValidtaPurchaseController;
   EventChannel _eventChannel;
   static AppsflyerSdk _instance;
-  final MethodChannel _methodChannel;
+  MethodChannel _methodChannel = const MethodChannel(AppsflyerConstants.AF_METHOD_CHANNEL);
 
   AppsFlyerOptions afOptions;
   Map mapOptions;
@@ -16,7 +16,8 @@ class AppsflyerSdk {
   ///provided by the user
   factory AppsflyerSdk(options) {
     if (_instance == null) {
-      MethodChannel methodChannel =
+      MethodChannel
+      methodChannel =
           const MethodChannel(AppsflyerConstants.AF_METHOD_CHANNEL);
 
       EventChannel eventChannel =
